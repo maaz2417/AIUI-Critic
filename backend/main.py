@@ -11,7 +11,7 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 
-from backend.services.ai_service import analyze_ui_image, generate_improved_ui
+from backend.services.ai_service import analyze_ui_image, generate_improved_image
 
 app = FastAPI(title="AI UI Critic API")
 
