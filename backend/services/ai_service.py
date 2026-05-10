@@ -39,8 +39,9 @@ def analyze_ui_image(image_bytes: bytes) -> dict:
     """
 
     try:
+        print("Analyzing UI with gpt-4o-mini (Vercel Turbo Mode)...")
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini", # 10x faster than gpt-4o
             response_format={ "type": "json_object" },
             messages=[
                 {
@@ -51,13 +52,13 @@ def analyze_ui_image(image_bytes: bytes) -> dict:
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/jpeg;base64,{base64_image}",
-                                "detail": "high"
+                                "detail": "low" # Drastically faster than 'high'
                             }
                         }
                     ]
                 }
             ],
-            max_tokens=1000
+            max_tokens=500
         )
         
         result_text = response.choices[0].message.content
