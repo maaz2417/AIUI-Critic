@@ -1,6 +1,7 @@
 import os
 import base64
 import json
+import re
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Optional
@@ -109,7 +110,7 @@ def generate_improved_image(image_bytes: bytes, feedback: dict) -> str:
     try:
         print("Generating ultra-fast custom design via GPT-4o-mini...")
         response = client.chat.completions.create(
-            model="gpt-4o-mini", # Switch to mini for 10x faster generation
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "user",
@@ -130,45 +131,28 @@ def generate_improved_image(image_bytes: bytes, feedback: dict) -> str:
         )
         
         raw_content = response.choices[0].message.content.strip()
-        print(f"Raw AI response received. Length: {len(raw_content)}")
         
-        # Robust SVG Extraction
-        svg_content = ""
-        if "<svg" in raw_content:
-            # Extract everything from <svg to </svg>
-            start = raw_content.find("<svg")
-            end = raw_content.find("</svg>") + 6
-            if end > start:
-                svg_content = raw_content[start:end]
+        # Robust SVG Extraction using search
+        import re
+        svg_match = re.search(r'<svg.*?</svg>', raw_content, re.DOTALL)
+        
+        if svg_match:
+            svg_content = svg_match.group(0)
+        else:
+            # Fallback: if it just returned the path or raw shapes
+            if "<path" in raw_content or "<rect" in raw_content:
+                 svg_content = f'<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">{raw_content}</svg>'
             else:
-                # If </svg> is missing, try to use whatever we have
-                svg_content = raw_content[start:] + "</svg>"
-        
-        if not svg_content:
-            raise ValueError("No SVG content found in AI response")
+                raise ValueError("No SVG content found in AI response")
 
         # Convert to Base64 data URL
-        import base64
         svg_b64 = base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
-        print("Successfully generated custom SVG.")
         return f"data:image/svg+xml;base64,{svg_b64}"
         
     except Exception as e:
         print(f"!!! SVG Generation failed: {e}")
-        # Dynamic error SVG instead of the laptop picture
-        error_svg = f"""
-        <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-            <rect width="1024" height="1024" fill="#f8fafc"/>
-            <text x="50%" y="45%" font-family="sans-serif" font-size="32" font-weight="bold" fill="#64748b" text-anchor="middle">Generating your custom design...</text>
-            <text x="50%" y="50%" font-family="sans-serif" font-size="18" fill="#94a3b8" text-anchor="middle">Please wait a moment and try clicking 'Auto-Fix' again.</text>
-            <rect x="412" y="550" width="200" height="10" rx="5" fill="#e2e8f0"/>
-            <rect x="412" y="550" width="120" height="10" rx="5" fill="#3b82f6">
-                <animate attributeName="width" from="0" to="200" dur="2s" repeatCount="indefinite" />
-            </rect>
-        </svg>
-        """
-        import base64
-        svg_b64 = base64.b64encode(error_svg.encode('utf-8')).decode('utf-8')
+        error_svg = f'<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect width="1024" height="1024" fill="#f8fafc"/><text x="50%" y="50%" font-family="sans-serif" font-size="24" fill="#64748b" text-anchor="middle">Design Generation Failed. Please try again.</text></svg>'
+        svg_b64 = base64.b64encode(error_svg.encode("utf-8")).decode("utf-8")
         return f"data:image/svg+xml;base64,{svg_b64}"
 
 
