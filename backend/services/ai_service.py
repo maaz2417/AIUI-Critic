@@ -108,40 +108,62 @@ def generate_improved_image(image_bytes: bytes, feedback: dict) -> str:
     """
 
     try:
-        print("Generating ultra-fast custom design via GPT-4o-mini...")
+        print("🚀 Powering up Premium Design Engine (GPT-4o)...")
+        # Use the most powerful model for the final design to ensure "WOW" factor
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o", 
             messages=[
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": prompt},
+                        {
+                            "type": "text", 
+                            "text": f"""
+                            You are a Senior UI/UX Lead Designer at a world-class agency. 
+                            I have a UI screenshot with these issues: {json.dumps(feedback, indent=2)}
+                            
+                            Your task is to create a STUNNING, MODERN, and HIGH-FIDELITY version of this UI.
+                            Return a single, valid, and complete SVG image.
+                            
+                            PREMIUM DESIGN SYSTEM REQUIREMENTS:
+                            1. Layout: Use a clean 1024x1024 viewport with a balanced grid and generous whitespace.
+                            2. Aesthetics: Implement 'Glassmorphism' (semi-transparent backgrounds with blur effects).
+                            3. Colors: Use a curated palette (e.g., Deep Indigos, Soft Purples, or Sleek Dark Mode). Use subtle gradients.
+                            4. Depth: Use soft, multi-layered shadows (box-shadow) and thin, elegant borders (border-radius: 24px+).
+                            5. Components: Use high-quality vector shapes for buttons, cards, and inputs.
+                            6. Icons: Include professional-looking icons using clean SVG paths.
+                            7. Typography: Use standard sans-serif with bold hierarchies for headings.
+                            
+                            Return ONLY the raw SVG code. No markdown, no explanations.
+                            """
+                        },
                         {
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/jpeg;base64,{base64_image}",
-                                "detail": "low"
+                                "detail": "high"
                             }
                         }
                     ]
                 }
             ],
-            max_tokens=3000,
-            temperature=0.3
+            max_tokens=4000,
+            temperature=0.4
         )
         
         raw_content = response.choices[0].message.content.strip()
         
-        # Robust SVG Extraction using search
+        # Robust SVG Extraction (restoring regex)
         import re
         svg_match = re.search(r'<svg.*?</svg>', raw_content, re.DOTALL)
         
         if svg_match:
             svg_content = svg_match.group(0)
         else:
-            # Fallback: if it just returned the path or raw shapes
-            if "<path" in raw_content or "<rect" in raw_content:
-                 svg_content = f'<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">{raw_content}</svg>'
+            if "<svg" in raw_content:
+                start = raw_content.find("<svg")
+                end = raw_content.find("</svg>") + 6
+                svg_content = raw_content[start:end]
             else:
                 raise ValueError("No SVG content found in AI response")
 
