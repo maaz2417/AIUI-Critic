@@ -31,6 +31,7 @@ class AnalyzeResponse(BaseModel):
     general_feedback: str
     error: str = None
 
+@app.post("/analyze")
 @app.post("/api/analyze")
 async def analyze_image(file: UploadFile = File(...)):
     if not file.content_type.startswith('image/'):
@@ -46,6 +47,7 @@ async def analyze_image(file: UploadFile = File(...)):
         
     return feedback
 
+@app.post("/improve")
 @app.post("/api/improve")
 async def improve_ui(file: UploadFile = File(...)):
     """
